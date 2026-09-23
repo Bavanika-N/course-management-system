@@ -23,6 +23,17 @@ const Course = {
   },
 
 
+  // Find a course by exact title (used for duplicate-title checks, FR-009)
+  async findByTitle(title) {
+    const [rows] = await db.execute(
+      "SELECT id, title FROM courses WHERE title = ? LIMIT 1",
+      [title]
+    );
+
+    return rows[0];
+  },
+
+
   // Create course
   async create(course) {
 

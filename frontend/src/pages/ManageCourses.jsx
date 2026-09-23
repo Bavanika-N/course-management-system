@@ -24,6 +24,16 @@ const EMPTY_COURSE = {
   description: "",
 };
 
+const EMPTY_FIELD_ERRORS = {
+  title: "",
+  category: "",
+  level: "",
+  duration: "",
+  price: "",
+  image: "",
+  description: "",
+};
+
 const LEVEL_OPTIONS = ["Beginner", "Intermediate", "Advanced"];
 
 
@@ -49,6 +59,8 @@ function ManageCourses() {
 
   const [formData, setFormData] = useState(EMPTY_COURSE);
   const [formError, setFormError] = useState("");
+  // FR-015/FR-016: per-field validation messages coming back from the server
+  const [fieldErrors, setFieldErrors] = useState(EMPTY_FIELD_ERRORS);
   const [saving, setSaving] = useState(false);
 
 
@@ -96,6 +108,14 @@ function ManageCourses() {
       ...formData,
       [name]: value,
     });
+
+    // Clear that field's server-side error as soon as the user edits it
+    if (fieldErrors[name]) {
+      setFieldErrors({
+        ...fieldErrors,
+        [name]: "",
+      });
+    }
   };
 
 
@@ -104,6 +124,7 @@ function ManageCourses() {
     setEditingId(null);
     setFormData(EMPTY_COURSE);
     setFormError("");
+    setFieldErrors(EMPTY_FIELD_ERRORS);
     setError("");
     setSuccess("");
   };
@@ -125,6 +146,7 @@ function ManageCourses() {
     });
 
     setFormError("");
+    setFieldErrors(EMPTY_FIELD_ERRORS);
     setError("");
     setSuccess("");
   };
@@ -135,6 +157,7 @@ function ManageCourses() {
     setEditingId(null);
     setFormData(EMPTY_COURSE);
     setFormError("");
+    setFieldErrors(EMPTY_FIELD_ERRORS);
   };
 
 
@@ -144,12 +167,20 @@ function ManageCourses() {
     // Stop the browser from reloading the page
     event.preventDefault();
 
+    // Guard against a second submit landing while one is already in flight
+    if (saving) {
+      return;
+    }
+
     setFormError("");
+    setFieldErrors(EMPTY_FIELD_ERRORS);
     setError("");
     setSuccess("");
 
 
-    // ---------- Client side validation ----------
+    // ---------- Lightweight client-side pre-check ----------
+    // Server-side validation (validateCourse helper) remains authoritative;
+    // this only avoids an obviously-empty round trip.
     if (
       !formData.title.trim() ||
       !formData.category.trim() ||
@@ -212,11 +243,21 @@ function ManageCourses() {
 
     } catch (error) {
 
-      // 400 = the backend rejected the data
-      setFormError(
-        error.response?.data?.message ||
-        "Could not save the course. Please try again."
-      );
+      const responseData = error.response?.data;
+
+      if (responseData?.errors) {
+        // FR-016: structured field-level errors from the backend
+        setFieldErrors({
+          ...EMPTY_FIELD_ERRORS,
+          ...responseData.errors,
+        });
+        setFormError(responseData.message || "Please fix the highlighted fields.");
+      } else {
+        setFormError(
+          responseData?.message ||
+          "Could not save the course. Please try again."
+        );
+      }
 
     } finally {
 
@@ -325,6 +366,10 @@ function ManageCourses() {
                     onChange={handleChange}
                     placeholder="e.g. React"
                   />
+
+                  {fieldErrors.title && (
+                    <p className="field-error">{fieldErrors.title}</p>
+                  )}
                 </div>
 
 
@@ -340,6 +385,10 @@ function ManageCourses() {
                     onChange={handleChange}
                     placeholder="e.g. Frontend"
                   />
+
+                  {fieldErrors.category && (
+                    <p className="field-error">{fieldErrors.category}</p>
+                  )}
                 </div>
 
               </div>
@@ -363,6 +412,10 @@ function ManageCourses() {
                       </option>
                     ))}
                   </select>
+
+                  {fieldErrors.level && (
+                    <p className="field-error">{fieldErrors.level}</p>
+                  )}
                 </div>
 
 
@@ -378,6 +431,10 @@ function ManageCourses() {
                     onChange={handleChange}
                     placeholder="e.g. 10 Weeks"
                   />
+
+                  {fieldErrors.duration && (
+                    <p className="field-error">{fieldErrors.duration}</p>
+                  )}
                 </div>
 
 
@@ -395,6 +452,10 @@ function ManageCourses() {
                     onChange={handleChange}
                     placeholder="e.g. 25000"
                   />
+
+                  {fieldErrors.price && (
+                    <p className="field-error">{fieldErrors.price}</p>
+                  )}
                 </div>
 
               </div>
@@ -412,6 +473,10 @@ function ManageCourses() {
                   onChange={handleChange}
                   placeholder="https://placehold.co/300x180?text=React"
                 />
+
+                {fieldErrors.image && (
+                  <p className="field-error">{fieldErrors.image}</p>
+                )}
               </div>
 
 
@@ -427,6 +492,10 @@ function ManageCourses() {
                   onChange={handleChange}
                   placeholder="Short summary of what students will learn."
                 />
+
+                {fieldErrors.description && (
+                  <p className="field-error">{fieldErrors.description}</p>
+                )}
               </div>
 
 
@@ -587,4 +656,3 @@ function ManageCourses() {
 }
 
 export default ManageCourses;
-

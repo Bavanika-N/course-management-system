@@ -1,5 +1,6 @@
 const Course = require("../models/courseModel");
 const User = require("../models/userModel");
+const validateCourse = require("../helpers/validateCourse");
 
 // Get all courses
 const getAllCourses = async (req, res) => {
@@ -50,22 +51,29 @@ const getCourseById = async (req, res) => {
 
 
 // Create course
+// Expected middleware order on the route: auth -> isAdmin -> createCourse (SEC-001/002/004, FR-013)
 const createCourse = async (req, res) => {
   try {
-    const {
-      title,
-      category,
-      level,
-      duration,
-      price,
-      image,
-      description,
-    } = req.body;
 
-    // Basic validation
-    if (!title || !category || !level) {
+    // ---------- FR-002 to FR-008: server-side validation ----------
+    const validation = validateCourse(req.body);
+
+    if (!validation.isValid) {
       return res.status(400).json({
-        message: "Title, category and level are required",
+        message: "Validation failed",
+        errors: validation.errors,
+      });
+    }
+
+    const { title, category, level, duration, price, image, description } = validation.data;
+
+    // ---------- FR-009: duplicate title check ----------
+    const duplicate = await Course.findByTitle(title);
+
+    if (duplicate) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: { title: "A course with this title already exists" },
       });
     }
 
@@ -95,19 +103,10 @@ const createCourse = async (req, res) => {
 
 
 // Update course
+// Expected middleware order on the route: auth -> isAdmin -> updateCourse (SEC-001/002/004, FR-013)
 const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const {
-      title,
-      category,
-      level,
-      duration,
-      price,
-      image,
-      description,
-    } = req.body;
 
     // Check if course exists
     const existingCourse = await Course.getById(id);
@@ -115,6 +114,29 @@ const updateCourse = async (req, res) => {
     if (!existingCourse) {
       return res.status(404).json({
         message: "Course not found",
+      });
+    }
+
+    // ---------- Same validation helper as createCourse (FR-012) ----------
+    const validation = validateCourse(req.body);
+
+    if (!validation.isValid) {
+      // FR-014 / AC-020: nothing is written to the DB on a failed validation
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: validation.errors,
+      });
+    }
+
+    const { title, category, level, duration, price, image, description } = validation.data;
+
+    // ---------- FR-009: duplicate title check, excluding this course ----------
+    const duplicate = await Course.findByTitle(title);
+
+    if (duplicate && String(duplicate.id) !== String(id)) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: { title: "A course with this title already exists" },
       });
     }
 
@@ -196,6 +218,7 @@ const getStats = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   getAllCourses,

@@ -141,7 +141,6 @@ function Courses() {
     });
   }
 
-
   if (selectedCategory !== "All") {
     activeFilters.push({
       type: "category",

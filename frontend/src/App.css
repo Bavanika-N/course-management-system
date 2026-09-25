@@ -1559,3 +1559,94 @@ textarea.input {
 
 }
 
+/* =========================================
+   CR-004 - Enrollment Summary
+   ========================================= */
+
+.enrollment-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.enrollment-summary-card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-primary);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.enrollment-summary-value {
+  display: block;
+  color: var(--color-dark);
+  font-size: 1.7rem;
+  font-weight: bold;
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.enrollment-summary-label {
+  display: block;
+  margin-top: 7px;
+  color: var(--color-muted);
+  font-size: 0.9rem;
+}
+
+
+/* =========================================
+   CR-004 - Enrollment Sorting
+   ========================================= */
+
+.enrollment-sort-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+
+  background-color: var(--color-white);
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+
+  padding: 16px 18px;
+  margin-bottom: 22px;
+
+  box-shadow: var(--shadow);
+}
+
+.enrollment-sort-bar label {
+  color: var(--color-dark);
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.enrollment-sort-select {
+  width: 240px;
+  max-width: 100%;
+  cursor: pointer;
+}
+
+
+/* =========================================
+   CR-004 - Responsive
+   ========================================= */
+
+@media (max-width: 700px) {
+
+  .enrollment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .enrollment-sort-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .enrollment-sort-select {
+    width: 100%;
+  }
+
+}

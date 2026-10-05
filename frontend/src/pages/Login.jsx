@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { FaSearch, FaSignInAlt } from "react-icons/fa";
 
 import api from "../services/api";
 import { saveAuth } from "../services/auth";
 import Navbar from "../components/Navbar";
-
 
 function Login() {
 
@@ -18,8 +21,18 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const redirectTo = location.state?.from;
+  // Check whether user came here because of session expiry
+  const sessionExpired =
+    new URLSearchParams(location.search).get("sessionExpired") === "true";
 
+  // Get the original page saved by api.js
+  const queryFrom =
+    new URLSearchParams(location.search).get("from");
+
+  // Also support the existing ProtectedRoute state
+  const stateFrom = location.state?.from;
+
+  const redirectTo = queryFrom || stateFrom;
 
   const handleSubmit = async (event) => {
 
@@ -28,7 +41,7 @@ function Login() {
 
     setError("");
 
-    // Simple client side check (the backend checks again)
+    // Simple client-side check
     if (!username.trim() || !password) {
       setError("Please enter both username and password.");
       return;
@@ -43,18 +56,21 @@ function Login() {
         password,
       });
 
+      // Save the JWT and the user
+      saveAuth(
+        response.data.token,
+        response.data.user
+      );
 
-      // ---------- Save the JWT and the user ----------
-      saveAuth(response.data.token, response.data.user);
-
-
-      // ---------- Redirect after successful login ----------
-
+      // Redirect after successful login
       const role = response.data.user.role;
 
-      if (redirectTo && !redirectTo.startsWith("/login")) {
+      // Return to the original page if available
+      if (
+        redirectTo &&
+        !redirectTo.startsWith("/login")
+      ) {
 
-        // Return to the page the user originally wanted
         navigate(redirectTo);
 
       } else if (role === "admin") {
@@ -71,17 +87,25 @@ function Login() {
 
     } catch (error) {
 
-      // error.response exists when the SERVER answered (400, 401, 500).
-      // It is undefined when the request never reached the server.
+      // Server responded with an error
       if (error.response) {
 
-        setError(
-          error.response.data?.message ||
-          `Login failed (status ${error.response.status})`
-        );
+        // Normal failed login
+        if (error.response.status === 401) {
+
+          setError("Invalid username or password");
+
+        } else {
+
+          setError(
+            error.response.data?.message ||
+            `Login failed (status ${error.response.status})`
+          );
+        }
 
       } else {
 
+        // Network/server connection error
         setError(
           "Cannot reach the server. Please check that the backend is running on http://localhost:3000"
         );
@@ -90,12 +114,11 @@ function Login() {
 
     } finally {
 
-      // Always stop the loading state, success or failure
+      // Always stop loading
       setLoading(false);
 
     }
   };
-
 
   return (
 
@@ -110,43 +133,61 @@ function Login() {
           Sign in to enroll in courses.
         </p>
 
+        {/* Session expired message */}
+        {sessionExpired && (
+          <p className="error">
+            Your session has expired. Please log in again.
+          </p>
+        )}
+
+        {/* Login error message */}
+        {error && (
+          <p className="error">
+            {error}
+          </p>
+        )}
 
         <form onSubmit={handleSubmit}>
 
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+
+            <label htmlFor="username">
+              Username
+            </label>
 
             <input
               id="username"
               type="text"
               value={username}
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) =>
+                setUsername(event.target.value)
+              }
               placeholder="Enter username"
               autoComplete="username"
               disabled={loading}
             />
+
           </div>
 
-
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+
+            <label htmlFor="password">
+              Password
+            </label>
 
             <input
               id="password"
               type="password"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
               placeholder="Enter password"
               autoComplete="current-password"
               disabled={loading}
             />
+
           </div>
-
-
-          {error && (
-            <p className="error">{error}</p>
-          )}
-
 
           <button
             type="submit"
@@ -154,15 +195,24 @@ function Login() {
             disabled={loading}
           >
             <FaSignInAlt />
-            {loading ? "Logging in..." : "Login"}
+
+            {loading
+              ? "Logging in..."
+              : "Login"}
           </button>
 
         </form>
 
-
         <p className="login-footer">
+
           Not sure where to go?{" "}
-          <Link to="/courses"><FaSearch /> Browse the courses</Link> first.
+
+          <Link to="/courses">
+            <FaSearch /> Browse the courses
+          </Link>
+
+          {" "}first.
+
         </p>
 
       </div>

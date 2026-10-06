@@ -1650,3 +1650,24 @@ textarea.input {
   }
 
 }
+
+/* =========================================
+   CR-006 - Student Enrollment Cancellation
+   ========================================= */
+
+.course-card-body .btn-block + .btn-block {
+  margin-top: 10px;
+}
+
+.course-card-body .btn-danger {
+  border-color: var(--color-danger);
+}
+
+.course-card-body .btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-dark);
+}
+
+.course-card-body .btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

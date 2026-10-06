@@ -34,6 +34,16 @@ router.get(
 );
 
 
+// Student - Cancel own enrollment
+router.delete(
+  "/my/:id",
+  authMiddleware,
+  roleMiddleware(["student"]),
+  deleteEnrollment
+);
+
+
+
 // Admin (JWT + admin role required)
 // View all enrollments
 router.get(

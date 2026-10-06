@@ -1671,3 +1671,116 @@ textarea.input {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* =========================================
+   CR-007 - Course Seat Capacity & Availability
+   ========================================= */
+
+/* Course card availability */
+.course-card-availability,
+.course-availability {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.course-card-availability {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.availability-unlimited {
+  color: var(--color-muted);
+}
+
+.availability-seats,
+.course-seats {
+  color: var(--color-success-text);
+}
+
+.availability-full,
+.course-full {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  font-size: 0.78rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Course details availability */
+.details-availability {
+  color: var(--color-dark);
+}
+
+.details-availability .availability-unlimited {
+  color: var(--color-muted);
+}
+
+.details-availability .availability-seats {
+  color: var(--color-success-text);
+}
+
+.details-availability .availability-full {
+  color: var(--color-error-text);
+}
+
+/* Admin course table availability */
+.course-table-availability {
+  min-width: 130px;
+  font-weight: bold;
+}
+
+.course-table-availability .availability-unlimited {
+  color: var(--color-muted);
+}
+
+.course-table-availability .availability-seats {
+  color: var(--color-success-text);
+}
+
+.course-table-availability .availability-full {
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+/* Maximum students field help text */
+.field-help {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.field-error {
+  margin: 0;
+  color: var(--color-error-text);
+  font-size: 0.82rem;
+  font-weight: bold;
+}
+
+/* Capacity/full notice on course details */
+.details-actions .notice.course-full-notice {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-left-color: var(--color-danger);
+}
+
+/* Responsive availability text */
+@media (max-width: 600px) {
+  .course-card-availability,
+  .course-availability {
+    font-size: 0.85rem;
+  }
+
+  .availability-full,
+  .course-full {
+    font-size: 0.72rem;
+  }
+}
+

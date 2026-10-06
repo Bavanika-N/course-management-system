@@ -24,6 +24,7 @@ const EMPTY_COURSE = {
   price: "",
   image: "",
   description: "",
+  max_students: "",
 };
 
 
@@ -36,6 +37,7 @@ const EMPTY_FIELD_ERRORS = {
   price: "",
   image: "",
   description: "",
+  max_students: "",
 };
 
 
@@ -741,6 +743,12 @@ function ManageCourses() {
       description:
         course.description || "",
 
+      max_students:
+        course.max_students === null ||
+        course.max_students === undefined
+          ? ""
+          : String(course.max_students),
+
     });
 
 
@@ -825,6 +833,17 @@ function ManageCourses() {
 
 
 
+    if (
+      formData.max_students !== "" &&
+      (!Number.isInteger(Number(formData.max_students)) ||
+        Number(formData.max_students) <= 0)
+    ) {
+      setFormError(
+        "Maximum students must be a positive integer, or leave it blank for unlimited capacity."
+      );
+      return;
+    }
+
     if (!formData.duration.trim()) {
 
       setFormError(
@@ -871,6 +890,11 @@ function ManageCourses() {
 
       description:
         formData.description.trim(),
+
+      max_students:
+        formData.max_students === ""
+          ? null
+          : Number(formData.max_students),
 
     };
 
@@ -1644,6 +1668,39 @@ function ManageCourses() {
 
 
 
+              {/* MAX STUDENTS / CAPACITY */}
+
+              <div className="form-group">
+
+                <label htmlFor="max_students">
+                  Maximum Students
+                </label>
+
+                <input
+                  id="max_students"
+                  className="input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  name="max_students"
+                  value={formData.max_students}
+                  onChange={handleChange}
+                  placeholder="Leave blank for unlimited"
+                />
+
+                <p className="field-help">
+                  Enter a positive number for a limited course. Leave blank for unlimited capacity.
+                </p>
+
+                {fieldErrors.max_students && (
+                  <p className="field-error">
+                    {fieldErrors.max_students}
+                  </p>
+                )}
+
+              </div>
+
+
               {/* IMAGE */}
 
               <div className="form-group">
@@ -1995,6 +2052,11 @@ function ManageCourses() {
 
 
 
+                        <th>
+                          Availability
+                        </th>
+
+
                         <th className="table-actions-column">
                           Actions
                         </th>
@@ -2071,6 +2133,30 @@ function ManageCourses() {
                               {course.price}
                             </td>
 
+
+
+                            <td>
+
+                              {course.max_students === null ||
+                              course.max_students === undefined ? (
+                                <span className="availability-unlimited">
+                                  Unlimited
+                                </span>
+                              ) : (
+                                <span
+                                  className={
+                                    course.is_full
+                                      ? "availability-full"
+                                      : "availability-seats"
+                                  }
+                                >
+                                  {course.is_full
+                                    ? "Course Full"
+                                    : `${Number(course.enrolled_count || 0)} / ${Number(course.max_students)} students`}
+                                </span>
+                              )}
+
+                            </td>
 
 
                             <td>

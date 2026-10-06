@@ -73,7 +73,6 @@ function Courses() {
   // ---------- Apply all filters ----------
   const filteredCourses = courses.filter((course) => {
 
-    // Convert null/undefined values to empty string
     const title = String(course.title ?? "");
     const category = String(course.category ?? "");
     const level = String(course.level ?? "");
@@ -118,7 +117,6 @@ function Courses() {
       coursePrice <= Number(maxPrice);
 
 
-    // AND logic
     return (
       matchesSearch &&
       matchesCategory &&
@@ -135,41 +133,52 @@ function Courses() {
 
 
   if (searchText.trim() !== "") {
+
     activeFilters.push({
       type: "search",
       label: `Search: ${searchText}`
     });
+
   }
 
+
   if (selectedCategory !== "All") {
+
     activeFilters.push({
       type: "category",
       label: `Category: ${selectedCategory}`
     });
+
   }
 
 
   if (selectedLevel !== "All") {
+
     activeFilters.push({
       type: "level",
       label: `Level: ${selectedLevel}`
     });
+
   }
 
 
   if (minPrice !== "") {
+
     activeFilters.push({
       type: "minPrice",
       label: `Min Price: ${minPrice}`
     });
+
   }
 
 
   if (maxPrice !== "") {
+
     activeFilters.push({
       type: "maxPrice",
       label: `Max Price: ${maxPrice}`
     });
+
   }
 
 
@@ -211,6 +220,22 @@ function Courses() {
   };
 
 
+  // ---------- Availability text ----------
+  const getAvailabilityText = (course) => {
+
+    // NULL = Unlimited
+    if (course.max_students === null) {
+      return "Unlimited";
+    }
+
+
+    const enrolled = Number(course.enrolled_count || 0);
+    const capacity = Number(course.max_students || 0);
+
+    return `${enrolled} / ${capacity} students`;
+  };
+
+
   return (
 
     <>
@@ -240,16 +265,20 @@ function Courses() {
           <div className="filter-bar">
 
             {/* Search */}
+
             <input
               type="text"
               className="input"
               placeholder="Search courses..."
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
+              onChange={(event) =>
+                setSearchText(event.target.value)
+              }
             />
 
 
             {/* Category */}
+
             <select
               className="input"
               value={selectedCategory}
@@ -260,7 +289,10 @@ function Courses() {
 
               {categories.map((category) => (
 
-                <option key={category} value={category}>
+                <option
+                  key={category}
+                  value={category}
+                >
                   {category}
                 </option>
 
@@ -270,6 +302,7 @@ function Courses() {
 
 
             {/* Level */}
+
             <select
               className="input"
               value={selectedLevel}
@@ -280,7 +313,10 @@ function Courses() {
 
               {levels.map((level) => (
 
-                <option key={level} value={level}>
+                <option
+                  key={level}
+                  value={level}
+                >
                   {level}
                 </option>
 
@@ -290,26 +326,33 @@ function Courses() {
 
 
             {/* Minimum Price */}
+
             <input
               type="number"
               className="input"
               placeholder="Minimum price"
               value={minPrice}
-              onChange={(event) => setMinPrice(event.target.value)}
+              onChange={(event) =>
+                setMinPrice(event.target.value)
+              }
             />
 
 
             {/* Maximum Price */}
+
             <input
               type="number"
               className="input"
               placeholder="Maximum price"
               value={maxPrice}
-              onChange={(event) => setMaxPrice(event.target.value)}
+              onChange={(event) =>
+                setMaxPrice(event.target.value)
+              }
             />
 
 
             {/* Clear All */}
+
             {activeFilters.length > 0 && (
 
               <button
@@ -329,33 +372,37 @@ function Courses() {
 
         {/* ---------- Active filter chips ---------- */}
 
-        {!loading && !error && activeFilters.length > 0 && (
+        {!loading &&
+          !error &&
+          activeFilters.length > 0 && (
 
-          <div className="active-filters">
+            <div className="active-filters">
 
-            <strong>Active Filters:</strong>
+              <strong>Active Filters:</strong>
 
-            {activeFilters.map((filter) => (
+              {activeFilters.map((filter) => (
 
-              <span
-                className="filter-chip"
-                key={filter.type}
-              >
-
-                {filter.label}
-
-                <button
-                  type="button"
-                  onClick={() => removeFilter(filter.type)}
+                <span
+                  className="filter-chip"
+                  key={filter.type}
                 >
-                  ×
-                </button>
 
-              </span>
+                  {filter.label}
 
-            ))}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeFilter(filter.type)
+                    }
+                  >
+                    ×
+                  </button>
 
-          </div>
+                </span>
+
+              ))}
+
+            </div>
 
         )}
 
@@ -363,18 +410,22 @@ function Courses() {
         {/* ---------- Loading ---------- */}
 
         {loading && (
+
           <p className="loading">
             Loading courses...
           </p>
+
         )}
 
 
         {/* ---------- Error ---------- */}
 
         {error && !loading && (
+
           <p className="error">
             {error}
           </p>
+
         )}
 
 
@@ -391,7 +442,7 @@ function Courses() {
         )}
 
 
-        {/* ---------- Courses exist but no filter match ---------- */}
+        {/* ---------- No filter match ---------- */}
 
         {!loading &&
           !error &&
@@ -418,7 +469,8 @@ function Courses() {
               {/* Result counter */}
 
               <p className="result-count">
-                Showing {filteredCourses.length} of {courses.length} courses
+                Showing {filteredCourses.length} of{" "}
+                {courses.length} courses
               </p>
 
 
@@ -428,10 +480,37 @@ function Courses() {
 
                 {filteredCourses.map((course) => (
 
-                  <CourseCard
+                  <div
                     key={course.id}
-                    course={course}
-                  />
+                    className="course-catalogue-item"
+                  >
+
+                    <CourseCard
+                      course={course}
+                    />
+
+
+                    {/* ---------- CR-007 Availability ---------- */}
+
+                    <div className="course-availability">
+
+                      {course.is_full ? (
+
+                        <span className="course-full">
+                          Course Full
+                        </span>
+
+                      ) : (
+
+                        <span className="course-seats">
+                          {getAvailabilityText(course)}
+                        </span>
+
+                      )}
+
+                    </div>
+
+                  </div>
 
                 ))}
 

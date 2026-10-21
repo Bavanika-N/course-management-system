@@ -182,12 +182,138 @@ const getAllEnrollments = async (req, res) => {
 
   try {
 
-    const enrollments =
-      await Enrollment.getAll();
+    const query = req.query;
+    const readString = (name) => {
+      const value = query[name];
+      return value === undefined || typeof value === "string"
+        ? value
+        : null;
+    };
+
+    const q = readString("q");
+    const courseIdValue = readString("courseId");
+    const from = readString("from");
+    const to = readString("to");
+    const sortValue = readString("sort");
+    const orderValue = readString("order");
+    const pageValue = readString("page");
+    const limitValue = readString("limit");
+
+    if (
+      q === null ||
+      courseIdValue === null ||
+      from === null ||
+      to === null ||
+      sortValue === null ||
+      orderValue === null ||
+      pageValue === null ||
+      limitValue === null
+    ) {
+      return res.status(400).json({
+        message: "Query parameters must be provided once as strings",
+      });
+    }
+
+    const parsePositiveInteger = (value) => {
+      if (value === undefined || !/^[1-9]\d*$/.test(value)) {
+        return null;
+      }
+
+      const parsed = Number(value);
+      return Number.isSafeInteger(parsed) ? parsed : null;
+    };
+
+    const courseId = courseIdValue === undefined
+      ? undefined
+      : parsePositiveInteger(courseIdValue);
+    const page = pageValue === undefined ? 1 : parsePositiveInteger(pageValue);
+    const limit = limitValue === undefined ? 20 : parsePositiveInteger(limitValue);
+
+    if (
+      (courseIdValue !== undefined && courseId === null) ||
+      page === null ||
+      limit === null ||
+      limit > 100
+    ) {
+      return res.status(400).json({
+        message: "Course ID, page, or limit is invalid",
+      });
+    }
+
+    const isValidDate = (value) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return false;
+      }
+
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(date.getTime()) &&
+        date.toISOString().slice(0, 10) === value;
+    };
+
+    if (
+      (from !== undefined && !isValidDate(from)) ||
+      (to !== undefined && !isValidDate(to)) ||
+      (from !== undefined && to !== undefined && from > to)
+    ) {
+      return res.status(400).json({
+        message: "Enrollment date range is invalid",
+      });
+    }
+
+    const sort = (sortValue === undefined ? "date" : sortValue).toLowerCase();
+    const sortAliases = {
+      date: "date",
+      enrolled_at: "date",
+      student: "student",
+      course: "course",
+    };
+    const normalizedSort = Object.prototype.hasOwnProperty.call(sortAliases, sort)
+      ? sortAliases[sort]
+      : undefined;
+    const order = (orderValue === undefined ? "desc" : orderValue).toLowerCase();
+    const orderAliases = {
+      asc: "ASC",
+      ascending: "ASC",
+      desc: "DESC",
+      descending: "DESC",
+    };
+    const normalizedOrder = Object.prototype.hasOwnProperty.call(orderAliases, order)
+      ? orderAliases[order]
+      : undefined;
+
+    if (!normalizedSort || !normalizedOrder) {
+      return res.status(400).json({
+        message: "Sort field or order is invalid",
+      });
+    }
+
+    const offset = (page - 1) * limit;
+    if (!Number.isSafeInteger(offset)) {
+      return res.status(400).json({
+        message: "Page is too large",
+      });
+    }
+
+    const result = await Enrollment.getPage({
+      search: q || "",
+      courseId,
+      from,
+      to,
+      sort: normalizedSort,
+      order: normalizedOrder,
+      limit,
+      offset,
+    });
 
     res.status(200).json({
-      message: "All enrollments retrieved successfully",
-      enrollments,
+      message: "Enrollments retrieved successfully",
+      enrollments: result.enrollments,
+      pagination: {
+        page,
+        limit,
+        total: result.total,
+        totalPages: Math.ceil(result.total / limit),
+      },
     });
 
   } catch (error) {

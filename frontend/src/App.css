@@ -1025,6 +1025,26 @@ textarea.input {
   overflow-x: auto;
 }
 
+.enrollment-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.enrollment-pagination p {
+  margin: 0;
+}
+
+.enrollment-pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .table {
   width: 100%;
 
@@ -1783,4 +1803,3 @@ textarea.input {
     font-size: 0.72rem;
   }
 }
-

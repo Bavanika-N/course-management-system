@@ -229,8 +229,55 @@ const Enrollment = {
   },
 
 
-  // Get all enrollments
-  async getAll() {
+  // Get one filtered page of enrollments and the total number of matches.
+  async getPage({ search, courseId, from, to, sort, order, limit, offset }) {
+
+    const conditions = [];
+    const values = [];
+
+    if (search) {
+      const escapedSearch = search.replace(/[!%_]/g, "!$&");
+      const searchPattern = `%${escapedSearch}%`;
+
+      conditions.push(
+        "(u.full_name LIKE ? ESCAPE '!' OR u.username LIKE ? ESCAPE '!')"
+      );
+      values.push(searchPattern, searchPattern);
+    }
+
+    if (courseId !== undefined) {
+      conditions.push("e.course_id = ?");
+      values.push(courseId);
+    }
+
+    if (from) {
+      conditions.push("e.enrolled_at >= ?");
+      values.push(from);
+    }
+
+    if (to) {
+      conditions.push("e.enrolled_at < DATE_ADD(?, INTERVAL 1 DAY)");
+      values.push(to);
+    }
+
+    const whereClause = conditions.length
+      ? `WHERE ${conditions.join(" AND ")}`
+      : "";
+
+    const sortColumns = {
+      date: "e.enrolled_at",
+      student: "u.full_name",
+      course: "c.title",
+    };
+
+    const [countRows] = await db.execute(
+      `SELECT COUNT(*) AS total
+       FROM enrollments e
+       JOIN users u ON e.student_id = u.id
+       JOIN courses c ON e.course_id = c.id
+       ${whereClause}`,
+      values
+    );
 
     const [rows] = await db.execute(
       `SELECT
@@ -254,10 +301,17 @@ const Enrollment = {
        JOIN courses c
          ON e.course_id = c.id
 
-       ORDER BY e.enrolled_at DESC`
+       ${whereClause}
+
+       ORDER BY ${sortColumns[sort]} ${order}, e.id ASC
+       LIMIT ? OFFSET ?`,
+      [...values, limit, offset]
     );
 
-    return rows;
+    return {
+      enrollments: rows,
+      total: Number(countRows[0].total),
+    };
   },
 
 

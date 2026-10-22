@@ -987,6 +987,37 @@ textarea.input {
   color: var(--color-muted);
 }
 
+.report-category-list {
+  display: grid;
+  gap: 14px;
+}
+
+.report-category-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 3fr) 48px;
+  align-items: center;
+  gap: 14px;
+}
+
+.report-category-row strong {
+  text-align: right;
+  color: var(--color-dark);
+}
+
+.report-bar-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eaf0f8;
+}
+
+.report-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
 
 /* =========================================
    14. Section cards and tables
@@ -1023,6 +1054,14 @@ textarea.input {
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
+}
+
+@media (max-width: 600px) {
+  .report-category-row {
+    grid-template-columns: minmax(90px, 1fr) minmax(80px, 2fr) 36px;
+    gap: 8px;
+    font-size: 0.9rem;
+  }
 }
 
 .enrollment-pagination {

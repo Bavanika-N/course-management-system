@@ -1,421 +1,169 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  FaBook,
-  FaEye,
-  FaGraduationCap,
-  FaSearch
-} from "react-icons/fa";
+import { FaBook, FaEye, FaGraduationCap, FaSearch } from "react-icons/fa";
 
 import api from "../services/api";
 import { getUser } from "../services/auth";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
+const emptyReport = {
+  summary: {
+    enrolledCourses: 0,
+    distinctCategories: 0,
+    earliestEnrollment: null,
+    latestEnrollment: null,
+  },
+  recentEnrollments: [],
+};
 
 function StudentDashboard() {
-
+  const [report, setReport] = useState(emptyReport);
   const [enrollments, setEnrollments] = useState([]);
-
-  const [stats, setStats] = useState({
-    courseCount: 0,
-    studentCount: 0,
-  });
-
+  const [stats, setStats] = useState({ courseCount: 0, studentCount: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
+  const [reportError, setReportError] = useState("");
+  const [supportingDataError, setSupportingDataError] = useState("");
   const user = getUser();
 
-
   useEffect(() => {
-
     const loadDashboard = async () => {
+      const [reportResult, enrollmentsResult, statsResult] = await Promise.allSettled([
+        api.get("/reports/my"),
+        api.get("/enrollments/my"),
+        api.get("/courses/stats"),
+      ]);
 
-      try {
-
-        const [enrollmentsResponse, statsResponse] =
-          await Promise.all([
-            api.get("/enrollments/my"),
-            api.get("/courses/stats"),
-          ]);
-
-
-        setEnrollments(
-          enrollmentsResponse.data.enrollments || []
+      const supportingErrors = [];
+      if (reportResult.status === "fulfilled") {
+        setReport({ ...emptyReport, ...reportResult.value.data });
+      } else {
+        setReportError(
+          reportResult.reason.response?.data?.message ||
+          "Your report could not be loaded. Other dashboard information is still available."
         );
-
-
-        setStats({
-          courseCount: statsResponse.data.courseCount,
-          studentCount: statsResponse.data.studentCount,
-        });
-
-
-      } catch (error) {
-
-        setError(
-          error.response?.data?.message ||
-          "Failed to load your dashboard"
-        );
-
-      } finally {
-
-        setLoading(false);
-
       }
 
+      if (enrollmentsResult.status === "fulfilled") {
+        setEnrollments(enrollmentsResult.value.data.enrollments || []);
+      } else {
+        supportingErrors.push("Your enrollment details could not be loaded.");
+      }
+
+      if (statsResult.status === "fulfilled") {
+        setStats({
+          courseCount: Number(statsResult.value.data.courseCount) || 0,
+          studentCount: Number(statsResult.value.data.studentCount) || 0,
+        });
+      } else {
+        supportingErrors.push("Course catalog statistics could not be loaded.");
+      }
+      setSupportingDataError(supportingErrors.join(" "));
+      setLoading(false);
     };
 
-
     loadDashboard();
-
   }, []);
 
+  const summary = report.summary || emptyReport.summary;
+  const recentEnrollments = report.recentEnrollments.length
+    ? report.recentEnrollments
+    : enrollments.slice(0, 3);
 
-  // ---------- Safe price conversion ----------
-  const getPrice = (price) => {
-
-    const numericPrice = Number(price);
-
-    return Number.isFinite(numericPrice)
-      ? numericPrice
-      : 0;
-
+  const formatDate = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
   };
 
-
-  // ---------- Total enrolled course value ----------
-  const totalEnrollmentValue = enrollments.reduce(
-    (total, enrollment) => {
-      return total + getPrice(enrollment.price);
-    },
-    0
-  );
-
-
-  // ---------- Format price ----------
-  const formatPrice = (price) => {
-
-    return getPrice(price).toLocaleString("en-LK", {
+  const formatPrice = () => {
+    const total = enrollments.reduce((sum, enrollment) => {
+      const price = Number(enrollment.price);
+      return sum + (Number.isFinite(price) ? price : 0);
+    }, 0);
+    return total.toLocaleString("en-LK", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-
   };
 
-
-  // Only show the 3 most recent enrollments on the dashboard
-  const recentEnrollments = enrollments.slice(0, 3);
-
-
-  const formatDate = (value) => {
-
-    if (!value) return "-";
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return "-";
-    }
-
-    return date.toLocaleDateString();
-
-  };
-
+  const cards = [
+    ["My Enrolled Courses", summary.enrolledCourses],
+    ["Distinct Categories", summary.distinctCategories],
+    ["Earliest Enrollment", formatDate(summary.earliestEnrollment)],
+    ["Latest Enrollment", formatDate(summary.latestEnrollment)],
+    ["Total Enrolled Course Value", `Rs. ${formatPrice()}`],
+    ["Courses Available", stats.courseCount],
+    ["Registered Students", stats.studentCount],
+  ];
 
   return (
-
     <>
       <Navbar />
-
       <div className="container">
-
-        {/* ---------- Welcome ---------- */}
-
         <div className="page-header">
-
           <div>
-
             <h1>Student Dashboard</h1>
-
-            <p className="page-subtitle">
-              Welcome back,{" "}
-              {user?.full_name || user?.username}!
-            </p>
-
+            <p className="page-subtitle">Welcome back, {user?.full_name || user?.username}!</p>
           </div>
-
-
-          <Link
-            to="/courses"
-            className="btn btn-primary"
-          >
-
-            <FaSearch />
-
-            Browse Courses
-
-          </Link>
-
+          <Link to="/courses" className="btn btn-primary"><FaSearch /> Browse Courses</Link>
         </div>
 
-
-        {/* ---------- Error ---------- */}
-
-        {error && (
-          <p className="error">
-            {error}
-          </p>
-        )}
-
-
-        {/* ---------- Stat cards ---------- */}
+        {reportError && <p className="error">{reportError}</p>}
+        {supportingDataError && <p className="error">{supportingDataError}</p>}
 
         <div className="dashboard-grid">
-
-          <div className="dashboard-card">
-
-            <span className="dashboard-card-value">
-
-              {loading
-                ? "..."
-                : enrollments.length}
-
-            </span>
-
-            <span className="dashboard-card-label">
-              My Enrolled Courses
-            </span>
-
-          </div>
-
-
-          <div className="dashboard-card">
-
-            <span className="dashboard-card-value">
-
-              {loading
-                ? "..."
-                : `Rs. ${formatPrice(totalEnrollmentValue)}`}
-
-            </span>
-
-            <span className="dashboard-card-label">
-              Total Enrolled Course Value
-            </span>
-
-          </div>
-
-
-          <div className="dashboard-card">
-
-            <span className="dashboard-card-value">
-
-              {loading
-                ? "..."
-                : stats.courseCount}
-
-            </span>
-
-            <span className="dashboard-card-label">
-              Courses Available
-            </span>
-
-          </div>
-
-
-          <div className="dashboard-card">
-
-            <span className="dashboard-card-value">
-
-              {loading
-                ? "..."
-                : stats.studentCount}
-
-            </span>
-
-            <span className="dashboard-card-label">
-              Registered Students
-            </span>
-
-          </div>
-
+          {cards.map(([label, value]) => (
+            <div className="dashboard-card" key={label}>
+              <span className="dashboard-card-value">
+                {loading ? "..." : typeof value === "number" ? Number(value) || 0 : value}
+              </span>
+              <span className="dashboard-card-label">{label}</span>
+            </div>
+          ))}
         </div>
 
-
-        {/* ---------- Recent enrollments ---------- */}
-
         <section className="section-card">
-
           <div className="section-card-header">
-
-            <h2>
-              My Recent Enrollments
-            </h2>
-
-
-            <Link
-              to="/my-enrollments"
-              className="link-inline"
-            >
-
-              <FaEye />
-
-              View all
-
-            </Link>
-
+            <h2>My Recent Enrollments</h2>
+            <Link to="/my-enrollments" className="link-inline"><FaEye /> View all</Link>
           </div>
-
-
-          {loading && (
-            <p className="loading">
-              Loading...
+          {loading && <p className="loading">Loading...</p>}
+          {!loading && recentEnrollments.length === 0 && (
+            <p className="empty">
+              You have not enrolled in any courses yet. Head over to the courses page and enroll in your first course.
             </p>
           )}
-
-
-          {!loading &&
-            recentEnrollments.length === 0 && (
-
-              <p className="empty">
-
-                You have not enrolled in any courses yet.
-                Head over to the courses page and enroll
-                in your first course.
-
-              </p>
-
-          )}
-
-
-          {!loading &&
-            recentEnrollments.length > 0 && (
-
-              <div className="table-wrapper">
-
-                <table className="table">
-
-                  <thead>
-
-                    <tr>
-
-                      <th>Course</th>
-                      <th>Category</th>
-                      <th>Level</th>
-                      <th>Enrolled On</th>
-
+          {!loading && recentEnrollments.length > 0 && (
+            <div className="table-wrapper">
+              <table className="table">
+                <thead><tr><th>Course</th><th>Category</th><th>Level</th><th>Enrolled On</th></tr></thead>
+                <tbody>
+                  {recentEnrollments.map((enrollment) => (
+                    <tr key={enrollment.id}>
+                      <td><Link to={`/courses/${enrollment.course_id}`}>{enrollment.title}</Link></td>
+                      <td>{enrollment.category}</td>
+                      <td>{enrollment.level}</td>
+                      <td>{formatDate(enrollment.enrolled_at)}</td>
                     </tr>
-
-                  </thead>
-
-
-                  <tbody>
-
-                    {recentEnrollments.map(
-                      (enrollment) => (
-
-                        <tr key={enrollment.id}>
-
-                          <td>
-
-                            <Link
-                              to={`/courses/${enrollment.course_id}`}
-                            >
-                              {enrollment.title}
-                            </Link>
-
-                          </td>
-
-                          <td>
-                            {enrollment.category}
-                          </td>
-
-                          <td>
-                            {enrollment.level}
-                          </td>
-
-                          <td>
-                            {formatDate(
-                              enrollment.enrolled_at
-                            )}
-                          </td>
-
-                        </tr>
-
-                    ))}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-
         </section>
-
-
-        {/* ---------- Quick actions ---------- */}
 
         <section className="section-card">
-
-          <div className="section-card-header">
-
-            <h2>
-              Quick Actions
-            </h2>
-
-          </div>
-
-
+          <div className="section-card-header"><h2>Quick Actions</h2></div>
           <div className="quick-actions">
-
-            <Link
-              to="/courses"
-              className="quick-action"
-            >
-
-              <span className="quick-action-icon">
-                <FaBook />
-              </span>
-
-              <span>
-                Browse all courses
-              </span>
-
-            </Link>
-
-
-            <Link
-              to="/my-enrollments"
-              className="quick-action"
-            >
-
-              <span className="quick-action-icon">
-                <FaGraduationCap />
-              </span>
-
-              <span>
-                View my enrollments
-              </span>
-
-            </Link>
-
+            <Link to="/courses" className="quick-action"><span className="quick-action-icon"><FaBook /></span><span>Browse all courses</span></Link>
+            <Link to="/my-enrollments" className="quick-action"><span className="quick-action-icon"><FaGraduationCap /></span><span>View my enrollments</span></Link>
           </div>
-
         </section>
-
       </div>
-
       <Footer />
-
     </>
-
   );
-
 }
-
 
 export default StudentDashboard;

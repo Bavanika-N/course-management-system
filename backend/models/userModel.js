@@ -25,6 +25,24 @@ const User = {
     return rows[0];
   },
 
+  async updateFullName(id, fullName) {
+    await db.execute(
+      "UPDATE users SET full_name = ? WHERE id = ?",
+      [fullName, id]
+    );
+
+    return this.findById(id);
+  },
+
+  async updatePassword(id, passwordHash) {
+    const [result] = await db.execute(
+      "UPDATE users SET password = ? WHERE id = ?",
+      [passwordHash, id]
+    );
+
+    return result.affectedRows > 0;
+  },
+
 
   // Count users by role
   async countByRole(role) {

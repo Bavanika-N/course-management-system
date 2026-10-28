@@ -13,6 +13,16 @@ DELETE /api/enrollments/:id
 
 GET    /api/users/username/:username
 GET    /api/users/:id
+GET    /api/users/me
+PUT    /api/users/me
+PUT    /api/users/me/password
+
+The profile endpoints are available to authenticated users and only expose or
+update the current user's information. The profile update accepts `full_name`
+only; password changes require `currentPassword`, `newPassword`, and
+`confirmPassword`. New passwords must contain at least 8 characters and no
+more than 72 UTF-8 bytes. User lookup endpoints are restricted to the matching
+user or an admin.
 
 The admin enrollment listing accepts `q`, `courseId`, `from`, `to`, `sort`,
 `order`, `page`, and `limit` query parameters. It searches student names and

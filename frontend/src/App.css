@@ -1266,9 +1266,75 @@ textarea.input {
   color: var(--color-muted);
 }
 
+   .profile-page {
+     max-width: 1000px;
+   }
 
-/* =========================================
-   404 page
+   .profile-grid {
+     display: grid;
+     grid-template-columns: repeat(2, minmax(0, 1fr));
+     gap: 24px;
+   }
+
+   .profile-card {
+     padding: 28px;
+     background-color: var(--color-white);
+     border: 1px solid var(--color-border);
+     border-radius: var(--radius);
+     box-shadow: var(--shadow);
+   }
+
+   .profile-card h2 {
+     display: flex;
+     align-items: center;
+     gap: 10px;
+     margin-bottom: 8px;
+     font-size: 1.35rem;
+   }
+
+   .profile-card .page-subtitle {
+     margin-bottom: 22px;
+   }
+
+   .profile-card form {
+     display: flex;
+     flex-direction: column;
+     gap: 18px;
+   }
+
+   .profile-card .btn {
+     align-self: flex-start;
+   }
+
+   .profile-readonly {
+     margin: 0 0 20px;
+     padding: 14px 16px;
+     background-color: #f8fafc;
+     border: 1px solid var(--color-border);
+     border-radius: var(--radius-sm);
+   }
+
+   .profile-readonly p {
+     display: flex;
+     justify-content: space-between;
+     gap: 12px;
+     margin: 0;
+     padding: 4px 0;
+   }
+
+   .profile-readonly p + p {
+     border-top: 1px solid var(--color-border);
+   }
+
+   @media (max-width: 760px) {
+     .profile-grid {
+       grid-template-columns: 1fr;
+     }
+   }
+
+
+   /* =========================================
+      404 page
    ========================================= */
 
 .not-found {

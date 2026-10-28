@@ -148,6 +148,11 @@ function Navbar() {
 
             <div className="navbar-user">
 
+              <NavLink to="/profile" className={linkClass} onClick={closeMenu}>
+                <FaUser />
+                Profile
+              </NavLink>
+
               <span className="navbar-username">
                 <FaUser />
                 <span className="role-badge">{user?.role}</span>
@@ -190,4 +195,3 @@ function Navbar() {
 }
 
 export default Navbar;
-

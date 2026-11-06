@@ -11,6 +11,8 @@ const emptyReport = {
   summary: {
     enrolledCourses: 0,
     distinctCategories: 0,
+    pendingRequests: 0,
+    rejectedRequests: 0,
     earliestEnrollment: null,
     latestEnrollment: null,
   },
@@ -78,6 +80,7 @@ function StudentDashboard() {
 
   const formatPrice = () => {
     const total = enrollments.reduce((sum, enrollment) => {
+      if (enrollment.status !== "approved") return sum;
       const price = Number(enrollment.price);
       return sum + (Number.isFinite(price) ? price : 0);
     }, 0);
@@ -89,6 +92,8 @@ function StudentDashboard() {
 
   const cards = [
     ["My Enrolled Courses", summary.enrolledCourses],
+    ["Pending Requests", summary.pendingRequests],
+    ["Rejected Requests", summary.rejectedRequests],
     ["Distinct Categories", summary.distinctCategories],
     ["Earliest Enrollment", formatDate(summary.earliestEnrollment)],
     ["Latest Enrollment", formatDate(summary.latestEnrollment)],
@@ -131,20 +136,27 @@ function StudentDashboard() {
           {loading && <p className="loading">Loading...</p>}
           {!loading && recentEnrollments.length === 0 && (
             <p className="empty">
-              You have not enrolled in any courses yet. Head over to the courses page and enroll in your first course.
+              You have no enrollment requests yet. Head over to the courses page to request a place.
             </p>
           )}
           {!loading && recentEnrollments.length > 0 && (
             <div className="table-wrapper">
               <table className="table">
-                <thead><tr><th>Course</th><th>Category</th><th>Level</th><th>Enrolled On</th></tr></thead>
+                <thead><tr><th>Course</th><th>Category</th><th>Level</th><th>Status</th><th>Requested On</th><th>Decision</th></tr></thead>
                 <tbody>
                   {recentEnrollments.map((enrollment) => (
                     <tr key={enrollment.id}>
                       <td><Link to={`/courses/${enrollment.course_id}`}>{enrollment.title}</Link></td>
                       <td>{enrollment.category}</td>
                       <td>{enrollment.level}</td>
+                      <td><span className={`tag tag-status tag-status-${enrollment.status}`}>{enrollment.status === "pending" ? "Pending Approval" : enrollment.status}</span></td>
                       <td>{formatDate(enrollment.enrolled_at)}</td>
+                      <td>
+                        {enrollment.reviewed_at && formatDate(enrollment.reviewed_at)}
+                        {enrollment.status === "rejected" && enrollment.decision_note && (
+                          <div>{enrollment.decision_note}</div>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

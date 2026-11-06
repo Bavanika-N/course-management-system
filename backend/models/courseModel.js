@@ -26,6 +26,7 @@ const Course = {
 
       LEFT JOIN enrollments e
         ON c.id = e.course_id
+        AND e.status = 'approved'
 
       GROUP BY c.id
 
@@ -60,6 +61,7 @@ const Course = {
 
       LEFT JOIN enrollments e
         ON c.id = e.course_id
+        AND e.status = 'approved'
 
       WHERE c.id = ?
 
@@ -215,7 +217,8 @@ const Course = {
       const [countRows] = await connection.execute(
         `SELECT COUNT(*) AS enrolled_count
          FROM enrollments
-         WHERE course_id = ?`,
+        WHERE course_id = ?
+        AND status = 'approved'`,
         [id]
       );
 
@@ -323,7 +326,8 @@ const Course = {
     const [rows] = await db.execute(
       `SELECT COUNT(*) AS enrolled_count
        FROM enrollments
-       WHERE course_id = ?`,
+       WHERE course_id = ?
+       AND status = 'approved'`,
       [courseId]
     );
 

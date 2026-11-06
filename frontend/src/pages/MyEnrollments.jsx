@@ -94,9 +94,18 @@ function MyEnrollments() {
   };
 
   // ---------- Enrollment summary ----------
-  const totalEnrolledCourses = enrollments.length;
+  const approvedEnrollments = enrollments.filter(
+    (enrollment) => enrollment.status === "approved"
+  );
+  const pendingRequests = enrollments.filter(
+    (enrollment) => enrollment.status === "pending"
+  ).length;
+  const rejectedRequests = enrollments.filter(
+    (enrollment) => enrollment.status === "rejected"
+  ).length;
+  const totalEnrolledCourses = approvedEnrollments.length;
 
-  const totalEnrollmentValue = enrollments.reduce(
+  const totalEnrollmentValue = approvedEnrollments.reduce(
     (total, enrollment) => {
       return total + getPrice(enrollment.price);
     },
@@ -104,12 +113,12 @@ function MyEnrollments() {
   );
 
   const averageCoursePrice =
-    enrollments.length > 0
-      ? totalEnrollmentValue / enrollments.length
+    approvedEnrollments.length > 0
+      ? totalEnrollmentValue / approvedEnrollments.length
       : 0;
 
   const distinctCategories = new Set(
-    enrollments
+    approvedEnrollments
       .map((enrollment) => enrollment.category)
       .filter((category) => category)
   ).size;
@@ -206,8 +215,8 @@ function MyEnrollments() {
 
             <p className="page-subtitle">
               {user?.full_name
-                ? `${user.full_name}, these are the courses you are enrolled in.`
-                : "These are the courses you are enrolled in."}
+                ? `${user.full_name}, track your enrollment requests and confirmed courses here.`
+                : "Track your enrollment requests and confirmed courses here."}
             </p>
           </div>
 
@@ -250,7 +259,27 @@ function MyEnrollments() {
                   </span>
 
                   <span className="enrollment-summary-label">
-                    Total Enrolled Courses
+                    Approved Enrollments
+                  </span>
+                </div>
+
+                <div className="enrollment-summary-card">
+                  <span className="enrollment-summary-value">
+                    {pendingRequests}
+                  </span>
+
+                  <span className="enrollment-summary-label">
+                    Pending Requests
+                  </span>
+                </div>
+
+                <div className="enrollment-summary-card">
+                  <span className="enrollment-summary-value">
+                    {rejectedRequests}
+                  </span>
+
+                  <span className="enrollment-summary-label">
+                    Rejected Requests
                   </span>
                 </div>
 
@@ -344,6 +373,11 @@ function MyEnrollments() {
                         <span className="tag tag-level">
                           {enrollment.level}
                         </span>
+                        <span className={`tag tag-status tag-status-${enrollment.status}`}>
+                          {enrollment.status === "pending"
+                            ? "Request Pending Approval"
+                            : enrollment.status}
+                        </span>
                       </div>
 
                       <h3 className="course-card-title">
@@ -375,11 +409,23 @@ function MyEnrollments() {
                         </li>
 
                         <li>
-                          <strong>Enrolled on:</strong>{" "}
+                          <strong>Requested on:</strong>{" "}
                           {formatDate(
                             enrollment.enrolled_at
                           )}
                         </li>
+                        {enrollment.reviewed_at && (
+                          <li>
+                            <strong>Decision date:</strong>{" "}
+                            {formatDate(enrollment.reviewed_at)}
+                          </li>
+                        )}
+                        {enrollment.status === "rejected" && enrollment.decision_note && (
+                          <li>
+                            <strong>Rejection reason:</strong>{" "}
+                            {enrollment.decision_note}
+                          </li>
+                        )}
                       </ul>
 
                       {/* ---------- View Course ---------- */}
@@ -390,24 +436,31 @@ function MyEnrollments() {
                         View Course
                       </Link>
 
-                      {/* ---------- Cancel Enrollment ---------- */}
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-block"
-                        onClick={() =>
-                          handleCancelEnrollment(
-                            enrollment.id,
-                            enrollment.title
-                          )
-                        }
-                        disabled={
-                          cancellingId === enrollment.id
-                        }
-                      >
-                        {cancellingId === enrollment.id
-                          ? "Cancelling..."
-                          : "Cancel Enrollment"}
-                      </button>
+                      {enrollment.status === "pending" && (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-block"
+                          onClick={() =>
+                            handleCancelEnrollment(
+                              enrollment.id,
+                              enrollment.title
+                            )
+                          }
+                          disabled={cancellingId === enrollment.id}
+                        >
+                          {cancellingId === enrollment.id
+                            ? "Cancelling..."
+                            : "Cancel Request"}
+                        </button>
+                      )}
+                      {enrollment.status === "rejected" && (
+                        <Link
+                          to={`/courses/${enrollment.course_id}`}
+                          className="btn btn-primary btn-block"
+                        >
+                          Request Again
+                        </Link>
+                      )}
                     </div>
                   </article>
                 ))}

@@ -7,6 +7,7 @@ const {
   getMyEnrollments,
   getCourseEnrollments,
   getAllEnrollments,
+  updateEnrollmentStatus,
   deleteEnrollment,
   cancelMyEnrollment,
 } = require("../controllers/enrollmentController");
@@ -65,6 +66,14 @@ router.get(
   authMiddleware,
   roleMiddleware(["admin"]),
   getCourseEnrollments
+);
+
+// Admin - Approve or reject a pending enrollment request
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  updateEnrollmentStatus
 );
 
 

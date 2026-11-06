@@ -672,6 +672,21 @@ a:hover {
   color: #92400e;
 }
 
+.tag-status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.tag-status-approved {
+  background-color: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.tag-status-rejected {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+}
+
 .role-badge {
   display: inline-block;
 
@@ -1125,6 +1140,19 @@ textarea.input {
 .table-actions {
   display: flex;
   gap: 8px;
+}
+
+.enrollment-review-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 180px;
+  margin-bottom: 10px;
+}
+
+.enrollment-review-actions .input {
+  width: 100%;
 }
 
 .table-thumb {

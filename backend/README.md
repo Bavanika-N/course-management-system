@@ -9,7 +9,25 @@ POST   /api/enrollments
 GET    /api/enrollments/my
 GET    /api/enrollments
 GET    /api/enrollments/course/:courseId
+PATCH  /api/enrollments/:id/status
 DELETE /api/enrollments/:id
+DELETE /api/enrollments/my/:id
+
+Enrollment requests are created with `pending` status. Administrators may
+approve or reject pending requests with `PATCH /api/enrollments/:id/status`,
+using `{ "status": "approved" }` or
+`{ "status": "rejected", "reason": "..." }`. Rejections require a non-empty
+reason; only pending requests can be reviewed. Approval rechecks course
+existence, capacity, and duplicate enrollment inside a transaction. Capacity
+and confirmed-enrollment reports count approved rows only. Admin enrollment
+listings accept an optional `status` filter (`pending`, `approved`, or
+`rejected`).
+
+Students may cancel pending requests but cannot cancel approved or rejected
+requests. Submitting a request for a previously rejected course resets that
+existing enrollment row to `pending` and clears its previous review details;
+only the latest request decision is retained. Administrators can still delete
+any enrollment.
 
 GET    /api/users/username/:username
 GET    /api/users/:id
@@ -35,4 +53,5 @@ For an existing database, apply any unapplied SQL files in `migrations` once,
 in numeric order, using the `course_management` database. In particular,
 `002_add_courses_max_students.sql` adds the nullable course-capacity column
 without changing existing course records; their capacity remains unlimited
-(`NULL`).
+(`NULL`). `004_add_enrollment_approval_workflow.sql` migrates existing
+enrollments to `approved` and sets the default for new rows to `pending`.

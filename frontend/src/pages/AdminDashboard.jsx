@@ -12,6 +12,7 @@ const emptyReport = {
     total_courses: 0,
     total_students: 0,
     total_enrollments: 0,
+    pending_enrollments: 0,
     students_with_enrollments: 0,
     enrollments_last_30_days: 0,
     courses_without_enrollments: 0,
@@ -76,6 +77,7 @@ function AdminDashboard() {
     ["Total Courses", summary.total_courses],
     ["Total Students", summary.total_students],
     ["Total Enrollments", summary.total_enrollments],
+    ["Pending Requests", summary.pending_enrollments],
     ["Students with Enrollments", summary.students_with_enrollments],
     ["Enrollments in Last 30 Days", summary.enrollments_last_30_days],
     ["Courses without Enrollments", summary.courses_without_enrollments],
@@ -169,13 +171,14 @@ function AdminDashboard() {
           {!loading && recentEnrollments.length > 0 && (
             <div className="table-wrapper">
               <table className="table">
-                <thead><tr><th>Student</th><th>Username</th><th>Course</th><th>Category</th><th>Level</th><th>Enrolled On</th></tr></thead>
+                <thead><tr><th>Student</th><th>Username</th><th>Course</th><th>Category</th><th>Level</th><th>Status</th><th>Requested On</th></tr></thead>
                 <tbody>
                   {recentEnrollments.map((enrollment) => (
                     <tr key={enrollment.id}>
                       <td>{enrollment.full_name}</td><td>{enrollment.username}</td>
                       <td>{enrollment.title}</td><td>{enrollment.category}</td>
                       <td><span className="tag tag-level">{enrollment.level}</span></td>
+                      <td><span className={`tag tag-status tag-status-${enrollment.status}`}>{enrollment.status}</span></td>
                       <td>{formatDate(enrollment.enrolled_at)}</td>
                     </tr>
                   ))}
@@ -189,7 +192,7 @@ function AdminDashboard() {
           <div className="section-card-header"><h2>Administration</h2></div>
           <div className="quick-actions">
             <Link to="/admin/courses" className="quick-action"><span className="quick-action-icon"><FaBook /></span><span>Add, edit and delete courses</span></Link>
-            <Link to="/admin/enrollments" className="quick-action"><span className="quick-action-icon"><FaUsers /></span><span>View and remove enrollments</span></Link>
+            <Link to="/admin/enrollments" className="quick-action"><span className="quick-action-icon"><FaUsers /></span><span>Review requests and manage enrollments</span></Link>
             <Link to="/courses" className="quick-action"><span className="quick-action-icon"><FaSearch /></span><span>See the public course list</span></Link>
           </div>
         </section>

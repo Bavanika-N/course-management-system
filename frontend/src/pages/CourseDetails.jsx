@@ -26,8 +26,7 @@ function CourseDetails() {
 
   const [enrolling, setEnrolling] = useState(false);
 
-  // Check whether the logged-in student is already enrolled
-  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [currentEnrollment, setCurrentEnrollment] = useState(null);
 
   const [checkingEnrollment, setCheckingEnrollment] =
     useState(false);
@@ -109,8 +108,7 @@ function CourseDetails() {
 
       // Only students need enrollment status
       if (!studentLoggedIn) {
-
-        setIsEnrolled(false);
+        setCurrentEnrollment(null);
 
         return;
       }
@@ -129,15 +127,10 @@ function CourseDetails() {
           response.data.enrollments || [];
 
 
-        const alreadyEnrolled =
-          enrollments.some(
-            (enrollment) =>
-              String(enrollment.course_id) ===
-              String(id)
-          );
-
-
-        setIsEnrolled(alreadyEnrolled);
+        const enrollment = enrollments.find(
+          (item) => String(item.course_id) === String(id)
+        );
+        setCurrentEnrollment(enrollment || null);
 
       } catch (error) {
 
@@ -147,7 +140,7 @@ function CourseDetails() {
         );
 
         // Do not block the course page
-        setIsEnrolled(false);
+        setCurrentEnrollment(null);
 
       } finally {
 
@@ -169,19 +162,6 @@ function CourseDetails() {
     setSuccess("");
 
 
-    // CR-007:
-    // Do not send an enrollment request if
-    // the course is already full.
-    if (isFull) {
-
-      setError(
-        "This course is full. No more enrollments are available."
-      );
-
-      return;
-    }
-
-
     setEnrolling(true);
 
 
@@ -199,103 +179,25 @@ function CourseDetails() {
       setSuccess(response.data.message);
 
 
-      // Student is now enrolled
-      setIsEnrolled(true);
-
-
-      // Update availability immediately
-      setCourse((previousCourse) => {
-
-        if (!previousCourse) {
-          return previousCourse;
-        }
-
-
-        const newEnrolledCount =
-          Number(previousCourse.enrolled_count || 0) + 1;
-
-
-        const newSeatsRemaining =
-          previousCourse.max_students === null
-            ? null
-            : Number(previousCourse.max_students) -
-              newEnrolledCount;
-
-
-        return {
-          ...previousCourse,
-
-          enrolled_count:
-            newEnrolledCount,
-
-          seats_remaining:
-            newSeatsRemaining,
-
-          is_full:
-            previousCourse.max_students !== null &&
-            newSeatsRemaining <= 0,
-        };
-
-      });
+      setCurrentEnrollment({ status: "pending" });
 
     } catch (error) {
-
-      // ---------- CR-007: Course Full ----------
       if (error.response?.status === 409) {
-
-        const message =
-          error.response?.data?.message || "";
-
-
-        // Course is full
-        if (
-          message.toLowerCase().includes("full")
-        ) {
-
-          setError(
-            "This course is full. No more enrollments are available."
+        try {
+          const response = await api.get("/enrollments/my");
+          const enrollment = (response.data.enrollments || []).find(
+            (item) => String(item.course_id) === String(id)
           );
-
-
-          // Refresh course availability
-          try {
-
-            const response =
-              await api.get(`/courses/${id}`);
-
-            setCourse(
-              response.data.course
-            );
-
-          } catch (refreshError) {
-
-            console.error(
-              "Error refreshing course:",
-              refreshError
-            );
-          }
-
-
-          return;
+          if (enrollment) setCurrentEnrollment(enrollment);
+        } catch (refreshError) {
+          console.error("Error refreshing enrollment status:", refreshError);
         }
-
-
-        // Already enrolled
-        setIsEnrolled(true);
-
-        setError(
-          "You are already enrolled in this course. You can see it in My Enrollments."
-        );
-
-      } else {
-
-        setError(
-          error.response?.data?.message ||
-          "Enrollment failed. Please try again."
-        );
-
       }
 
+      setError(
+        error.response?.data?.message ||
+        "Enrollment request failed. Please try again."
+      );
     } finally {
 
       setEnrolling(false);
@@ -579,17 +481,23 @@ function CourseDetails() {
 
                 <>
 
-                  {/* Already enrolled */}
-
-                  {isEnrolled ? (
+                  {currentEnrollment?.status === "pending" ||
+                  currentEnrollment?.status === "approved" ? (
 
                     <>
+
+                      <span className={`tag tag-status tag-status-${currentEnrollment.status}`}>
+                        {currentEnrollment.status === "pending"
+                          ? "Request Pending Approval"
+                          : "Approved"}
+                      </span>
 
                       <div className="notice">
 
                         <p>
-                          You are already enrolled
-                          in this course.
+                          {currentEnrollment.status === "pending"
+                            ? "Your enrollment request is waiting for administrator approval."
+                            : "You are enrolled in this course."}
                         </p>
 
                       </div>
@@ -608,59 +516,37 @@ function CourseDetails() {
 
                     </>
 
-                  ) : isFull ? (
-
-                    /* ---------- CR-007: Course Full ---------- */
-
-                    <>
-
-                      <div className="notice">
-
-                        <p>
-                          This course has reached its
-                          maximum capacity.
-                        </p>
-
-                      </div>
-
-
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-lg"
-                        disabled
-                      >
-
-                        Course Full
-
-                      </button>
-
-
-                      <Link
-                        to="/courses"
-                        className="btn btn-outline"
-                      >
-
-                        Browse Other Courses
-
-                      </Link>
-
-                    </>
-
                   ) : (
 
-                    /* ---------- Available ---------- */
-
                     <>
+
+                      {currentEnrollment?.status === "rejected" && (
+                        <>
+                          <span className="tag tag-status tag-status-rejected">
+                            Rejected
+                          </span>
+                          {currentEnrollment.decision_note && (
+                            <p className="error">
+                              Rejection reason: {currentEnrollment.decision_note}
+                            </p>
+                          )}
+                        </>
+                      )}
+
+                      {isFull && (
+                        <div className="notice">
+                          <p>
+                            This course is currently full. You may still request a
+                            place; approval depends on availability.
+                          </p>
+                        </div>
+                      )}
 
                       <button
                         type="button"
                         className="btn btn-primary btn-lg"
                         onClick={handleEnroll}
-                        disabled={
-                          enrolling ||
-                          checkingEnrollment ||
-                          isFull
-                        }
+                        disabled={enrolling || checkingEnrollment}
                       >
 
                         <FaShoppingCart />
@@ -668,8 +554,10 @@ function CourseDetails() {
                         {checkingEnrollment
                           ? "Checking..."
                           : enrolling
-                          ? "Enrolling..."
-                          : "Enroll Now"}
+                          ? "Submitting..."
+                          : currentEnrollment?.status === "rejected"
+                          ? "Request Again"
+                          : "Request Enrollment"}
 
                       </button>
 

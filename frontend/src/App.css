@@ -1099,6 +1099,51 @@ textarea.input {
   gap: 8px;
 }
 
+.audit-log-filters {
+  align-items: flex-end;
+}
+
+.audit-log-filters .form-group {
+  min-width: 150px;
+}
+
+.audit-log-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.audit-log-table {
+  min-width: 1050px;
+}
+
+.audit-log-secondary,
+.audit-log-no-data {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.audit-log-details summary {
+  color: var(--color-primary);
+  cursor: pointer;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.audit-log-details pre {
+  max-width: 360px;
+  max-height: 260px;
+  overflow: auto;
+  margin: 8px 0 0;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: #f8fafc;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .table {
   width: 100%;
 

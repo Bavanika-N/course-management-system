@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const { insertAuditLog } = require("../helpers/auditLog");
 
 const Enrollment = {
   async create(studentId, courseId) {
@@ -86,7 +87,7 @@ const Enrollment = {
     }
   },
 
-  async updateStatus(id, status, reviewerId, decisionNote) {
+  async updateStatus(id, status, reviewerId, decisionNote, auditContext) {
     const connection = await db.getConnection();
 
     try {
@@ -119,7 +120,7 @@ const Enrollment = {
       }
 
       const [lockedRows] = await connection.execute(
-        `SELECT id, student_id, course_id, status
+        `SELECT *
          FROM enrollments
          WHERE id = ?
          FOR UPDATE`,
@@ -184,6 +185,24 @@ const Enrollment = {
            AND status = 'pending'`,
         [status, reviewerId, decisionNote, id]
       );
+
+      const [updatedRows] = await connection.execute(
+        `SELECT *
+         FROM enrollments
+         WHERE id = ?`,
+        [id]
+      );
+
+      await insertAuditLog(connection, {
+        ...auditContext,
+        action: status === "approved"
+          ? "ENROLLMENT_APPROVED"
+          : "ENROLLMENT_REJECTED",
+        entityType: "enrollment",
+        entityId: id,
+        previousData: enrollment,
+        newData: updatedRows[0],
+      });
 
       await connection.commit();
 
@@ -369,14 +388,47 @@ const Enrollment = {
     };
   },
 
-  async delete(id) {
-    const [result] = await db.execute(
-      `DELETE FROM enrollments
-       WHERE id = ?`,
-      [id]
-    );
+  async delete(id, auditContext) {
+    const connection = await db.getConnection();
 
-    return result;
+    try {
+      await connection.beginTransaction();
+
+      const [enrollmentRows] = await connection.execute(
+        `SELECT *
+         FROM enrollments
+         WHERE id = ?
+         FOR UPDATE`,
+        [id]
+      );
+
+      if (enrollmentRows.length === 0) {
+        await connection.rollback();
+        return { affectedRows: 0 };
+      }
+
+      await insertAuditLog(connection, {
+        ...auditContext,
+        action: "ENROLLMENT_DELETED",
+        entityType: "enrollment",
+        entityId: id,
+        previousData: enrollmentRows[0],
+      });
+
+      const [result] = await connection.execute(
+        `DELETE FROM enrollments
+         WHERE id = ?`,
+        [id]
+      );
+
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
 
   async deleteByStudent(id, studentId) {

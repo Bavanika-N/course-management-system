@@ -1,4 +1,17 @@
 const db = require("../config/db");
+const { insertAuditLog } = require("../helpers/auditLog");
+
+const getAuditCourseData = (course) => ({
+  id: course.id,
+  title: course.title,
+  category: course.category,
+  level: course.level,
+  duration: course.duration,
+  price: course.price,
+  image: course.image,
+  description: course.description,
+  max_students: course.max_students,
+});
 
 const Course = {
 
@@ -88,7 +101,7 @@ const Course = {
 
 
   // Create course
-  async create(course) {
+  async create(course, auditContext) {
 
     const {
       title,
@@ -102,32 +115,52 @@ const Course = {
     } = course;
 
 
-    const [result] = await db.execute(
-      `INSERT INTO courses
-       (
-         title,
-         category,
-         level,
-         duration,
-         price,
-         image,
-         description,
-         max_students
-       )
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        title,
-        category,
-        level,
-        duration,
-        price,
-        image,
-        description,
-        max_students
-      ]
-    );
+    const connection = await db.getConnection();
 
-    return result.insertId;
+    try {
+      await connection.beginTransaction();
+
+      const [result] = await connection.execute(
+        `INSERT INTO courses
+         (
+           title,
+           category,
+           level,
+           duration,
+           price,
+           image,
+           description,
+           max_students
+         )
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          title,
+          category,
+          level,
+          duration,
+          price,
+          image,
+          description,
+          max_students
+        ]
+      );
+
+      await insertAuditLog(connection, {
+        ...auditContext,
+        action: "COURSE_CREATED",
+        entityType: "course",
+        entityId: result.insertId,
+        newData: getAuditCourseData({ id: result.insertId, ...course }),
+      });
+
+      await connection.commit();
+      return result.insertId;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
 
 
@@ -179,7 +212,7 @@ const Course = {
   // CR-007:
   // Admin cannot reduce max_students below
   // the current number of enrollments.
-  async updateWithCapacityCheck(id, course) {
+  async updateWithCapacityCheck(id, course, auditContext) {
 
     const connection = await db.getConnection();
 
@@ -191,9 +224,7 @@ const Course = {
 
       // Lock the course row
       const [courseRows] = await connection.execute(
-        `SELECT
-            id,
-            max_students
+        `SELECT *
          FROM courses
          WHERE id = ?
          FOR UPDATE`,
@@ -282,6 +313,14 @@ const Course = {
         ]
       );
 
+      await insertAuditLog(connection, {
+        ...auditContext,
+        action: "COURSE_UPDATED",
+        entityType: "course",
+        entityId: id,
+        previousData: getAuditCourseData(courseRows[0]),
+        newData: getAuditCourseData({ id: Number(id), ...course }),
+      });
 
       // Commit transaction
       await connection.commit();
@@ -308,15 +347,47 @@ const Course = {
 
 
   // Delete course
-  async delete(id) {
+  async delete(id, auditContext) {
+    const connection = await db.getConnection();
 
-    const [result] = await db.execute(
-      `DELETE FROM courses
-       WHERE id = ?`,
-      [id]
-    );
+    try {
+      await connection.beginTransaction();
 
-    return result;
+      const [courseRows] = await connection.execute(
+        `SELECT *
+         FROM courses
+         WHERE id = ?
+         FOR UPDATE`,
+        [id]
+      );
+
+      if (courseRows.length === 0) {
+        await connection.rollback();
+        return { affectedRows: 0 };
+      }
+
+      await insertAuditLog(connection, {
+        ...auditContext,
+        action: "COURSE_DELETED",
+        entityType: "course",
+        entityId: id,
+        previousData: getAuditCourseData(courseRows[0]),
+      });
+
+      const [result] = await connection.execute(
+        `DELETE FROM courses
+         WHERE id = ?`,
+        [id]
+      );
+
+      await connection.commit();
+      return result;
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   },
 
 

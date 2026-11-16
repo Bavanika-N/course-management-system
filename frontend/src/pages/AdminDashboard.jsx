@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaBook, FaChartBar, FaSearch, FaUsers } from "react-icons/fa";
+import { FaBook, FaChartBar, FaClipboardList, FaSearch, FaUsers } from "react-icons/fa";
 
 import api from "../services/api";
 import { getUser } from "../services/auth";
@@ -193,6 +193,7 @@ function AdminDashboard() {
           <div className="quick-actions">
             <Link to="/admin/courses" className="quick-action"><span className="quick-action-icon"><FaBook /></span><span>Add, edit and delete courses</span></Link>
             <Link to="/admin/enrollments" className="quick-action"><span className="quick-action-icon"><FaUsers /></span><span>Review requests and manage enrollments</span></Link>
+            <Link to="/admin/audit-logs" className="quick-action"><span className="quick-action-icon"><FaClipboardList /></span><span>Review the administrative audit trail</span></Link>
             <Link to="/courses" className="quick-action"><span className="quick-action-icon"><FaSearch /></span><span>See the public course list</span></Link>
           </div>
         </section>

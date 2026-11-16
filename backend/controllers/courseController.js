@@ -1,6 +1,7 @@
 const Course = require("../models/courseModel");
 const User = require("../models/userModel");
 const validateCourse = require("../helpers/validateCourse");
+const { createAuditContext } = require("../helpers/auditLog");
 
 
 // Validate max_students
@@ -184,7 +185,7 @@ const createCourse = async (req, res) => {
 
       // CR-007
       max_students,
-    });
+    }, createAuditContext(req));
 
 
     res.status(201).json({
@@ -317,7 +318,8 @@ const updateCourse = async (req, res) => {
           image,
           description,
           max_students,
-        }
+        },
+        createAuditContext(req)
       );
 
 
@@ -385,7 +387,13 @@ const deleteCourse = async (req, res) => {
     }
 
 
-    await Course.delete(id);
+    const result = await Course.delete(id, createAuditContext(req));
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Course not found",
+      });
+    }
 
 
     res.status(200).json({

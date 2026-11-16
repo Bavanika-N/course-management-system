@@ -12,6 +12,7 @@ GET    /api/enrollments/course/:courseId
 PATCH  /api/enrollments/:id/status
 DELETE /api/enrollments/:id
 DELETE /api/enrollments/my/:id
+GET    /api/audit-logs
 
 Enrollment requests are created with `pending` status. Administrators may
 approve or reject pending requests with `PATCH /api/enrollments/:id/status`,
@@ -48,6 +49,17 @@ usernames, supports inclusive enrollment-date bounds, and sorts by `date`,
 `student`, or `course`. Pages start at 1; `limit` defaults to 20 and is capped
 at 100. The response includes `pagination.page`, `limit`, `total`, and
 `totalPages`.
+
+The audit log endpoint is administrator-only. It accepts `entityType`,
+`entityId`, `actor`, `action`, `from`, `to`, `page`, and `limit`; dates use
+`YYYY-MM-DD`, pages start at 1, and `limit` defaults to 20 (maximum 100).
+Course creation, updates and deletion, plus administrator enrollment
+approval, rejection and deletion, are recorded with actor, role, IP address,
+timestamp, and before/after data where applicable. Audit writes share the
+business operation's database transaction: if a log cannot be recorded, the
+admin operation is rolled back. Passwords and password hashes are excluded
+from audit data. Audit records are append-only and have no update/delete API;
+database triggers also reject direct updates and deletes.
 
 For an existing database, apply any unapplied SQL files in `migrations` once,
 in numeric order, using the `course_management` database. In particular,

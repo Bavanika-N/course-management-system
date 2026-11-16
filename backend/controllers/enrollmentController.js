@@ -1,5 +1,6 @@
 const Enrollment = require("../models/enrollmentModel");
 const Course = require("../models/courseModel");
+const { createAuditContext } = require("../helpers/auditLog");
 
 
 // Enroll in a course
@@ -314,7 +315,8 @@ const updateEnrollmentStatus = async (req, res) => {
       id,
       status,
       req.user.id,
-      decisionNote || null
+      decisionNote || null,
+      createAuditContext(req)
     );
 
     if (!result.success) {
@@ -349,7 +351,7 @@ const deleteEnrollment = async (req, res) => {
     const { id } = req.params;
 
     const result =
-      await Enrollment.delete(id);
+      await Enrollment.delete(id, createAuditContext(req));
 
 
     if (result.affectedRows === 0) {
